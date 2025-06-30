@@ -4,15 +4,22 @@ import { ADD_COUNTRY } from "../api/queries";
 import "./AddCountryForm.css";
 
 type Props = {
-  onAdd?: (name: string, emoji: string, code: string) => void; // ← optionnel maintenant
+  onAdd?: (name: string, emoji: string, code: string) => void;
 };
 
 export function AddCountryForm({ onAdd }: Props) {
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState("");
   const [code, setCode] = useState("");
+  const [formError, setFormError] = useState("");
 
-  const [addCountry, { error }] = useMutation(ADD_COUNTRY, {
+  const [addCountry, { loading, error }] = useMutation(ADD_COUNTRY, {
+    onCompleted: () => {
+      setName("");
+      setEmoji("");
+      setCode("");
+      setFormError("");
+    },
     variables: {
       data: { name, emoji, code },
     },
@@ -20,17 +27,16 @@ export function AddCountryForm({ onAdd }: Props) {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!name || !emoji || !code) return;
+
+    if (!name || !emoji || !code) {
+      setFormError("Tous les champs sont obligatoires.");
+      return;
+    }
 
     try {
-      await addCountry(); 
-      onAdd?.(name, emoji, code); 
-      setName("");
-      setEmoji("");
-      setCode("");
-    } catch (err) {
-      console.error("Erreur lors de l'ajout :", err);
-    }
+      await addCountry();
+      onAdd?.(name, emoji, code);
+    } catch {}
   };
 
   return (
@@ -53,8 +59,12 @@ export function AddCountryForm({ onAdd }: Props) {
         value={code}
         onChange={(e) => setCode(e.target.value)}
       />
-      <button type="submit">Add</button>
-      {error && <p style={{ color: "red" }}>Erreur : {error.message}</p>}
+      <button type="submit" disabled={loading}>
+        {loading ? "Ajout..." : "Add"}
+      </button>
+
+      {formError && <p style={{ color: "red" }}>{formError}</p>}
+      {error && <p style={{ color: "red" }}>{error.message}</p>}
     </form>
   );
 }
